@@ -37,7 +37,7 @@ class TestLogsViewer(TestCase):
 
     def test_get_log_files(self):
         with tempfile.TemporaryDirectory() as log_dir:
-            open("%s/default.log" % log_dir, "a").close()
+            open(f"{log_dir}/default.log", "a").close()
             result = get_log_files(log_dir, 1, 1)
             self.assertEqual(
                 result,
@@ -52,7 +52,7 @@ class TestLogsViewer(TestCase):
 
     def test_readlines_reverse(self):
         with tempfile.TemporaryDirectory() as log_dir:
-            with open("%s/default.log" % log_dir, "w") as qfile:
+            with open(f"{log_dir}/default.log", "w") as qfile:
                 qfile.write(
                     "[WARNING] 2022-08-26 13:02:46,070 django.request: Not Found: /404/"
                 )
@@ -64,9 +64,7 @@ class TestLogsViewer(TestCase):
                 )
                 qfile.close()
 
-            with open(
-                "%s/default.log" % log_dir, encoding="utf8", errors="ignore"
-            ) as qfile:
+            with open(f"{log_dir}/default.log", encoding="utf8", errors="ignore") as qfile:
                 lines = readlines_reverse(qfile, exclude=None)
                 lines_string = " ".join(map(str, lines))
                 self.assertTrue(isinstance(lines, types.GeneratorType))
