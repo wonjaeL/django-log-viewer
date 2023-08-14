@@ -25,7 +25,6 @@ class TemplateView(_TemplateView):
 
 class LogJsonView(JSONResponseMixin, TemplateView):
     def get_log_json(self, original_context={}):
-        context = {}
         page = original_context.get("page", 1)
         file_name = original_context.get("file_name", "")
 
@@ -35,10 +34,11 @@ class LogJsonView(JSONResponseMixin, TemplateView):
         current_file = file_name
 
         lines_per_page = settings.LOG_VIEWER_MAX_READ_LINES
-        context["original_file_name"] = file_name
-        context["next_page"] = page + 1
-        context["log_files"] = []
-
+        context = {
+            "original_file_name": file_name,
+            "next_page": page + 1,
+            "log_files": [],
+        }
         log_file_data = get_log_files(
             settings.LOG_VIEWER_FILES_DIR,
             settings.LOG_VIEWER_FILE_LIST_MAX_ITEMS_PER_PAGE,
@@ -75,17 +75,13 @@ class LogJsonView(JSONResponseMixin, TemplateView):
                         )
                     )
 
-                    if len(next_lines) < lines_per_page:
-                        context["last"] = True
-                    else:
-                        context["last"] = False
+                    context["last"] = len(next_lines) < lines_per_page
                     context["logs"] = next_lines
                     context["current_file"] = current_file
                     context["file"] = file
 
             except Exception as error:
                 print(error)
-                pass
         else:
             context["last"] = True
 
@@ -132,35 +128,34 @@ class LogDownloadView(TemplateView):
             log_dir = os.path.dirname(file_path)
             log_file = os.path.basename(file_path)
 
-            if log_file in log_file_result.get(log_dir, []):
-                with open(uri, "rb") as f:
-                    buffer = f.read()
-                resp = HttpResponse(buffer, content_type="plain/text")
-                resp["Content-Disposition"] = "attachment; filename=%s" % file_name
-                return resp
-            else:
+            if log_file not in log_file_result.get(log_dir, []):
                 raise Http404
 
+            with open(uri, "rb") as f:
+                buffer = f.read()
+            resp = HttpResponse(buffer, content_type="plain/text")
+            resp["Content-Disposition"] = f"attachment; filename={file_name}"
         else:
             generation_time = localtime() if django_settings.USE_TZ else now()
-            zip_filename = "log_%s.zip" % generation_time.strftime("%Y%m%dT%H%M%S")
+            zip_filename = f'log_{generation_time.strftime("%Y%m%dT%H%M%S")}.zip'
             zip_buffer = BytesIO()
 
             with zipfile.ZipFile(
-                zip_buffer, "a", zipfile.ZIP_DEFLATED, False
-            ) as zip_file:
+                        zip_buffer, "a", zipfile.ZIP_DEFLATED, False
+                    ) as zip_file:
                 for log_dir, log_files in log_file_result.items():
                     for log_file in log_files:
                         display = os.path.join(log_dir, log_file)
                         uri = os.path.join(settings.LOG_VIEWER_FILES_DIR, display)
 
                         with open(uri, "r") as f:
-                            zip_file.writestr("%s" % display, f.read())
+                            zip_file.writestr(f"{display}", f.read())
 
             zip_buffer.seek(0)
             resp = HttpResponse(zip_buffer, content_type="application/zip")
-            resp["Content-Disposition"] = "attachment; filename=%s" % zip_filename
-            return resp
+            resp["Content-Disposition"] = f"attachment; filename={zip_filename}"
+
+        return resp
 
 
 class LogViewerView(TemplateView):

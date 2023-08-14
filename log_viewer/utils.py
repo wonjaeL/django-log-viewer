@@ -83,12 +83,10 @@ def readlines_reverse(qfile, exclude=None):
 
         # modified
         if next_char == "\n" and line:
-            if any([line.endswith(p) for p in reversed_patterns]):
-                if exclude and re.search(exclude, line[::-1]).group(0):
-                    line = ""
-                else:
+            if any(line.endswith(p) for p in reversed_patterns):
+                if not exclude or not re.search(exclude, line[::-1])[0]:
                     yield line[::-1]
-                    line = ""
+                line = ""
         else:
             line += next_char
         position -= 1

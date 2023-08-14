@@ -13,8 +13,7 @@ setup(
     zip_safe=False,
     description="Django log viewer",
     url="https://github.com/agusmakmun/django-log-viewer",
-    download_url="https://github.com/agusmakmun/django-log-viewer/tarball/v%s"
-    % __version__,
+    download_url=f"https://github.com/agusmakmun/django-log-viewer/tarball/v{__version__}",
     keywords=["django log viewer"],
     long_description=open("README.rst").read(),
     license="MIT",
